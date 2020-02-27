@@ -12,7 +12,7 @@ import numpy as np
 # from datetime import datetime as dt
 # from operator import itemgetter
 from tkinter import Tk, Label, Frame, Entry, Button, \
-    N, S, W, E, SUNKEN, RAISED, MULTIPLE, SINGLE, Listbox, END
+    N, S, W, E, SUNKEN, RAISED, EXTENDED, SINGLE, Listbox, END
 # import lxml.html as h
 # import aiohttp
 # import asyncio
@@ -27,26 +27,28 @@ import local_en as local
 
 DEFAULT_FR_DATE = '31/01/2018'
 DEFAULT_TO_DATE = '31/01/2019'
+DEFAULT_KEYWORDS = local.DEFAULT_KEYWORDS
 BUTTON_WIDTH = 10
 ELEMENTS_IN_LIST = 29
+LIST_WIDTH = 29
 
 root = Tk()
 root.title(local.ROOT_TITLE)
-root.geometry('990x700')
+root.geometry('910x710')
 root.resizable(width=True,
                height=True)
 
 top_frame = Frame(root)
-top_frame.grid(row=0, column=0, columnspan=7, sticky=E)
+top_frame.grid(row=0, column=0, columnspan=8, sticky=E)
 
 left_frame = Frame(root)
-left_frame.grid(row=1, column=0, columnspan=2)
+left_frame.grid(row=1, column=0, columnspan=3, sticky=W)
 
 right_frame = Frame(root)
-right_frame.grid(row=1, column=2, columnspan=5)
+right_frame.grid(row=1, column=3, columnspan=6, sticky=E)
 
 bottom_frame = Frame(root, height=100)
-bottom_frame.grid(row=2, column=0, columnspan=7)
+bottom_frame.grid(row=2, column=0, columnspan=8, sticky=S)
 chosen_variables = set()
 dependent_variable = ''
 
@@ -59,7 +61,7 @@ def load_button_bound(event=None):
     :return: None
     """
 
-    global graph_object, mpl_subplot
+    global graph_object, mpl_subplot, message_object
 
     load_button.config(relief=SUNKEN)
     try:
@@ -85,7 +87,7 @@ def load_button_bound(event=None):
         graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
 
     except Exception as error:
-        commentary_text['text'] = error
+        message_object['text'] = error
 
     load_button.config(relief=RAISED)
 
@@ -97,7 +99,7 @@ def results_button_bound(event=None):
     :return: None
     """
 
-    global results_object
+    global results_object, message_object
 
     results_button.config(relief=SUNKEN)
 
@@ -109,7 +111,7 @@ def results_button_bound(event=None):
         results_object.grid(row=0, column=0, columnspan=7, sticky=S)
 
     except Exception as error:
-        commentary_text['text'] = error
+        message_object['text'] = error
 
     results_button.config(relief=RAISED)
 
@@ -122,25 +124,21 @@ def data_load_button_bound(event=None):
     :return: None
     """
 
-    global left_frame, commentary_text, listbox
+    global left_frame, keyword_text,\
+        listbox, message_object
 
-    commentary_text['text'] = local.WELCOME
     data_load_button.config(relief=SUNKEN)
 
     try:
-        listbox.destroy()
-        del listbox
+        listbox.delete(0, END)
 
-        listbox = Listbox(left_frame, height=ELEMENTS_IN_LIST,
-                          selectmode=MULTIPLE)
-        listbox.grid(row=1, column=0, columnspan=2)
+        data_wb = DataSet().get_data(keyword_text.get())
 
-        for _ in range(100):
-            text_variable = 'label'*4 + str(int(random.random()*100))
-            listbox.insert(END, text_variable)
+        for data_item in data_wb:
+            listbox.insert(END, data_item)
 
     except Exception as error:
-        commentary_text['text'] = error
+        message_object['text'] = error
 
     data_load_button.config(relief=RAISED)
 
@@ -152,7 +150,9 @@ def enter_variables_button_bound(event=None):
     :return: None
     """
 
-    global enter_variables_button, listbox, chosen_variables, dependent_variable
+    global enter_variables_button,\
+        listbox, chosen_variables,\
+        dependent_variable
 
     enter_variables_button.config(relief=SUNKEN)
 
@@ -193,7 +193,7 @@ def enter_variables_button_bound(event=None):
     Button(master, text=local.EXIT, command=exit_small).grid(row=0, column=0)
     Button(master, text=local.BUTTON_SELECT, command=get_selected).grid(row=0, column=1)
     Label(master, text=local.DEPENDENT_VARIABLE_SELECTION).grid(row=1, column=0, columnspan=2)
-    inner_listbox = Listbox(master, selectmode=SINGLE)
+    inner_listbox = Listbox(master, selectmode=SINGLE, width=LIST_WIDTH, height=ELEMENTS_IN_LIST)
     inner_listbox.grid(row=2, column=0, columnspan=2)
 
     for item in chosen_variables:
@@ -235,31 +235,31 @@ exit_button = Button(top_frame,
                      width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                      text=local.EXIT,
                      command=exit_button_bound)
-exit_button.grid(row=0, column=0, sticky=N+W, rowspan=3)
+exit_button.grid(row=0, column=0, sticky=N+E, rowspan=3)
 
 load_button = Button(top_frame,
                      width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                      text=local.LOAD_GRAPH,
                      command=load_button_bound)
-load_button.grid(row=0, column=1, sticky=N+W, rowspan=3)
+load_button.grid(row=0, column=1, sticky=N+E, rowspan=3)
 
 results_button = Button(top_frame,
                         width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                         text=local.SHOW_RESULTS,
                         command=results_button_bound)
-results_button.grid(row=0, column=4, sticky=N+E, rowspan=3)
+results_button.grid(row=0, column=4, sticky=N+W, rowspan=3)
 
 data_load_button = Button(top_frame,
                           width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                           text=local.LOAD_VARIABLES,
                           command=data_load_button_bound)
-data_load_button.grid(row=0, column=5, sticky=N+E, rowspan=3)
+data_load_button.grid(row=0, column=5, sticky=N+W, rowspan=3)
 
 enter_variables_button = Button(top_frame,
                                 width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                                 text=local.ENTER_VARIABLES,
                                 command=enter_variables_button_bound)
-enter_variables_button.grid(row=0, column=6, sticky=N+E, rowspan=3)
+enter_variables_button.grid(row=0, column=6, sticky=N+W, rowspan=3)
 # -------------------------------------------------------------------
 
 
@@ -277,25 +277,26 @@ to_date.insert(0, DEFAULT_TO_DATE)
 fr_date.grid(row=1, column=2)
 to_date.grid(row=1, column=3)
 
-commentary_text = Label(top_frame, text=local.WELCOME)
-commentary_text.grid(row=2, column=2, columnspan=2)
+keyword_text = Entry(top_frame, width=LIST_WIDTH+10)
+keyword_text.insert(0, DEFAULT_KEYWORDS)
+keyword_text.grid(row=2, column=2, columnspan=2)
 
 Label(left_frame,
       text=local.ANALYZE_VARIABLES).grid(row=0, column=0, columnspan=2)
 
-listbox = Listbox(left_frame, height=ELEMENTS_IN_LIST,
-                  selectmode=MULTIPLE)
+listbox = Listbox(left_frame, height=ELEMENTS_IN_LIST, width=LIST_WIDTH,
+                  selectmode=EXTENDED)
 listbox.grid(row=1, column=0, columnspan=2)
-
-for i in range(100):
-    text_variable = 'label'*4 + str(int(random.random()*100))
-    listbox.insert(END, text_variable)
+listbox.insert(END, local.PUSH_LOAD_VARIABLES)
 
 graph_object = PlotWindow(right_frame)
 graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
 
 results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n')*4)
-results_object.grid(row=0, column=0)
+results_object.grid(row=0, column=2, columnspan=5)
+message_object = Label(bottom_frame, text=local.WELCOME)
+message_object.grid(row=1, column=0, columnspan=8)
+
 # -------------------------------------------------------------------
 
 root.bind('<Return>', load_button_bound)

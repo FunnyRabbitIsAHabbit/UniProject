@@ -11,6 +11,78 @@ from tkinter import Frame, TOP, BOTH
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
     NavigationToolbar2Tk
 from matplotlib.figure import Figure
+from pandas_datareader import wb
+import pandas as pd
+
+
+class DataSet:
+
+    def __init__(self, countries=None,
+                 indicators=None, start_year=None, stop_year=None):
+        """
+
+        :param countries:
+        :param indicators:
+        :param start_year:
+        :param stop_year:
+        """
+
+        properties = DataSet.set_default()
+        self.countries = countries or properties['countries']
+        self.indicators = indicators or properties['indicators']
+        self.start_year = start_year or 1995
+        self.stop_year = stop_year or 2019
+
+    @staticmethod
+    def set_default(countries_filename='countries.txt',
+                    indicators_filename='indicators.txt'):
+        """
+
+        :param countries_filename: str
+        :param indicators_filename: str
+        :return: dict
+        """
+
+        try:
+            with open(countries_filename) as a:
+                countries_lst = a.readlines()
+
+            with open(indicators_filename) as a:
+                indicators_lst = a.readlines()
+
+            return {'countries': countries_lst,
+                    'indicators': indicators_lst}
+
+        except FileNotFoundError:
+            print('file not found')
+
+            return {'countries': None,
+                    'indicators': None}
+
+    def __repr__(self):
+        """
+
+        :return: str
+        """
+
+        dic = self.__dict__
+
+        return 'WorldBankDataSet object:\n' + \
+               '\n'.join([str(key) + ': ' + str(dic[key])
+                          for key in dic])
+
+    def get_data(self, search_keywords):
+        """
+
+        :param search_keywords: list
+        :return: list
+        """
+
+        start, end = self.start_year, self.stop_year
+        search_keywords = search_keywords.split()
+        data = wb.search('(?:'+'|'.join(search_keywords)+')')
+
+        return data['name'].to_list()
 
 
 class PlotWindow(Frame):
