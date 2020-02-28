@@ -12,7 +12,7 @@ import numpy as np
 # from datetime import datetime as dt
 # from operator import itemgetter
 from tkinter import Tk, Label, Frame, Entry, Button, \
-    N, S, W, E, SUNKEN, RAISED, EXTENDED, SINGLE, Listbox, END
+    N, S, W, E, SUNKEN, RAISED, MULTIPLE, SINGLE, Listbox, END
 # import lxml.html as h
 # import aiohttp
 # import asyncio
@@ -285,7 +285,7 @@ Label(left_frame,
       text=local.ANALYZE_VARIABLES).grid(row=0, column=0, columnspan=2)
 
 listbox = Listbox(left_frame, height=ELEMENTS_IN_LIST, width=LIST_WIDTH,
-                  selectmode=EXTENDED)
+                  selectmode=MULTIPLE)
 listbox.grid(row=1, column=0, columnspan=2)
 listbox.insert(END, local.PUSH_LOAD_VARIABLES)
 
