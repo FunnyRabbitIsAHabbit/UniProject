@@ -14,6 +14,8 @@ from matplotlib.figure import Figure
 from pandas_datareader import wb
 import pandas as pd
 
+import local_en as local
+
 
 class DataSet:
 
@@ -27,7 +29,7 @@ class DataSet:
         :param stop_year:
         """
 
-        properties = DataSet.set_default()
+        properties = self.__class__.set_default()
         self.countries = countries or properties['countries']
         self.indicators = indicators or properties['indicators']
         self.start_year = start_year or 1995
@@ -81,6 +83,7 @@ class DataSet:
         start, end = self.start_year, self.stop_year
         search_keywords = search_keywords.split()
         data = wb.search('(?:'+'|'.join(search_keywords)+')')
+        self.__class__.data = data
 
         return data['name'].to_list()
 
