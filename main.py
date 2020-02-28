@@ -135,13 +135,9 @@ def data_load_button_bound(event=None):
         wb_data = DataSet()
         data_wb = wb_data.get_data(keyword_text.get())
 
-        try:
-            class_error = wb_data.current_error
-            if class_error:
-                message_object['text'] = class_error
-
-        except AttributeError:
-            pass
+        class_error = wb_data.current_error
+        if class_error:
+            message_object['text'] = class_error
 
         for data_item in data_wb:
             listbox.insert(END, data_item)

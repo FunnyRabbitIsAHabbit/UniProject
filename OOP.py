@@ -19,6 +19,8 @@ import local_en as local
 
 class DataSet:
 
+    current_error = None
+
     def __init__(self, countries=None,
                  indicators=None, start_year=None, stop_year=None):
         """
@@ -56,7 +58,7 @@ class DataSet:
                     'indicators': indicators_lst}
 
         except FileNotFoundError:
-            print('file not found')
+            DataSet.current_error = local.ERROR
 
             return {'countries': None,
                     'indicators': None}
@@ -82,10 +84,15 @@ class DataSet:
 
         start, end = self.start_year, self.stop_year
         search_keywords = search_keywords.split()
-        data = wb.search('(?:'+'|'.join(search_keywords)+')')
-        self.__class__.data = data
+        try:
+            data = wb.search('(?:'+'|'.join(search_keywords)+')')
+            self.__class__.data = data
+            return data['name'].to_list()
 
-        return data['name'].to_list()
+        except Exception as error:
+            self.__class__.current_error = error
+
+            return pd.DataFrame()
 
 
 class PlotWindow(Frame):
