@@ -11,6 +11,7 @@ from tkinter import Frame, TOP, BOTH
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,\
     NavigationToolbar2Tk
 from matplotlib.figure import Figure
+import pandas_datareader._utils as pdu
 from pandas_datareader import wb
 import pandas as pd
 
@@ -25,16 +26,16 @@ class DataSet:
                  indicators=None, start_year=None, stop_year=None):
         """
 
-        :param countries:
-        :param indicators:
-        :param start_year:
-        :param stop_year:
+        :param countries: lst, optional
+        :param indicators: lst, optional
+        :param start_year: int, optional
+        :param stop_year: int, optional
         """
 
         properties = self.__class__.set_default()
         self.countries = countries or properties['countries']
         self.indicators = indicators or properties['indicators']
-        self.start_year = start_year or 1995
+        self.start_year = start_year if start_year and start_year < stop_year else 1995
         self.stop_year = stop_year or 2019
 
     @staticmethod
@@ -53,6 +54,11 @@ class DataSet:
 
             with open(indicators_filename) as a:
                 indicators_lst = a.readlines()
+
+            for i in range(len(countries_lst)):
+                countries_lst[i] = countries_lst[i].rstrip()
+            for j in range(len(indicators_lst)):
+                indicators_lst[j] = indicators_lst[j].rstrip()
 
             return {'countries': countries_lst,
                     'indicators': indicators_lst}
@@ -75,7 +81,7 @@ class DataSet:
                '\n'.join([str(key) + ': ' + str(dic[key])
                           for key in dic])
 
-    def get_data(self, search_keywords):
+    def get_data_id(self, search_keywords):
         """
 
         :param search_keywords: list
@@ -85,14 +91,39 @@ class DataSet:
         start, end = self.start_year, self.stop_year
         search_keywords = search_keywords.split()
         try:
-            data = wb.search('(?:'+'|'.join(search_keywords)+')')
-            self.__class__.data = data
+            data = wb.search('|'.join(search_keywords))
+            DataSet.data = data
+
             return data['name'].to_list()
 
         except Exception as error:
-            self.__class__.current_error = error
+            DataSet.current_error = error
 
             return pd.DataFrame()
+
+    def get_data(self, indicator_set):
+        """
+
+        :param indicator_set: set
+        :return: pandas.DataFrame
+        """
+
+        try:
+            data = DataSet.data
+            indicator_set_clean = data.loc[data['name'].isin(indicator_set)]['id'].to_list()
+            indicators_ids_data = wb.download(country=self.countries,
+                                              indicator=indicator_set_clean,
+                                              start=self.start_year, end=self.stop_year)
+
+            DataSet.indicators_ids_data = indicators_ids_data
+
+        except AttributeError as error1:
+            DataSet.error = local.ERROR + str(error1)
+
+        except pdu.RemoteDataError as error2:
+            DataSet.error = local.ERROR + str(error2)
+
+        return
 
 
 class PlotWindow(Frame):

@@ -12,7 +12,8 @@ import numpy as np
 # from datetime import datetime as dt
 # from operator import itemgetter
 from tkinter import Tk, Label, Frame, Entry, Button, \
-    N, S, W, E, SUNKEN, RAISED, MULTIPLE, SINGLE, Listbox, END
+    N, S, W, E, SUNKEN, RAISED, MULTIPLE, SINGLE, Listbox,\
+    END, Radiobutton, StringVar
 # import lxml.html as h
 # import aiohttp
 # import asyncio
@@ -34,7 +35,7 @@ LIST_WIDTH = 29
 
 root = Tk()
 root.title(local.ROOT_TITLE)
-root.geometry('910x710')
+root.geometry('927x710')
 root.resizable(width=True,
                height=True)
 
@@ -51,13 +52,14 @@ bottom_frame = Frame(root, height=100)
 bottom_frame.grid(row=2, column=0, columnspan=8, sticky=S)
 chosen_variables = set()
 dependent_variable = ''
+model_to_use = ''
 
 
 def load_button_bound(event=None):
     """
     Bound events on Load button
 
-    :param event: Tk event
+    :param event: Tk event, optional
     :return: None
     """
 
@@ -92,10 +94,22 @@ def load_button_bound(event=None):
     load_button.config(relief=RAISED)
 
 
+def model_bound(event=None):
+    """
+
+    :param event: Tk event, optional
+    :return: None
+    """
+
+    global model_to_use
+
+    model_to_use = model_var.get()
+
+
 def results_button_bound(event=None):
     """
 
-    :param event: Tk event
+    :param event: Tk event, optional
     :return: None
     """
 
@@ -120,20 +134,21 @@ def data_load_button_bound(event=None):
     """
     Bound events on Load Data button
 
-    :param event: Tk event
+    :param event: Tk event, optional
     :return: None
     """
 
     global left_frame, keyword_text,\
-        listbox, message_object
+        listbox, message_object, wb_data
 
     data_load_button.config(relief=SUNKEN)
+    message_object['text'] = local.WELCOME
 
     try:
         listbox.delete(0, END)
 
         wb_data = DataSet()
-        data_wb = wb_data.get_data(keyword_text.get())
+        data_wb = wb_data.get_data_id(keyword_text.get())
 
         class_error = wb_data.current_error
         if class_error:
@@ -151,7 +166,7 @@ def data_load_button_bound(event=None):
 def enter_variables_button_bound(event=None):
     """
 
-    :param event: Tk event
+    :param event: Tk event, optional
     :return: None
     """
 
@@ -174,10 +189,14 @@ def enter_variables_button_bound(event=None):
         :return: None
         """
 
-        global dependent_variable
+        global dependent_variable, chosen_variables, wb_data
 
         try:
             dependent_variable = inner_listbox.get(inner_listbox.curselection()[0])
+            exit_small()
+            wb_data.get_data(chosen_variables)
+
+            chosen_variables.clear()
 
         except IndexError:
             pass
@@ -204,8 +223,7 @@ def enter_variables_button_bound(event=None):
     for item in chosen_variables:
         inner_listbox.insert(END, item)
 
-    chosen_variables.clear()
-
+    master.bind('<Return>', get_selected)
     master.mainloop()
 
     enter_variables_button.config(relief=RAISED)
@@ -215,7 +233,7 @@ def exit_button_bound(event=None):
     """
     Bound events on Exit button
 
-    :param event: Tk event
+    :param event: Tk event, optional
     :return: None
     """
 
@@ -235,7 +253,7 @@ def exit_button_bound(event=None):
         exit()
 
 
-# Buttons -----------------------------------------------------------
+# Buttons and Radiobuttons ------------------------------------------
 exit_button = Button(top_frame,
                      width=BUTTON_WIDTH, height=int(BUTTON_WIDTH/2),
                      text=local.EXIT,
@@ -265,6 +283,16 @@ enter_variables_button = Button(top_frame,
                                 text=local.ENTER_VARIABLES,
                                 command=enter_variables_button_bound)
 enter_variables_button.grid(row=0, column=6, sticky=N+W, rowspan=3)
+
+model_var = StringVar()
+model_var.set('ECM')
+ecm_model = Radiobutton(master=top_frame,
+                        text='ECM', variable=model_var, value='ECM')
+arima_model = Radiobutton(master=top_frame,
+                          text='ARIMA', variable=model_var, value='ARIMA')
+ecm_model.grid(row=0, column=7, sticky=W)
+arima_model.grid(row=1, column=7, sticky=W)
+
 # -------------------------------------------------------------------
 
 
@@ -292,19 +320,18 @@ Label(left_frame,
 listbox = Listbox(left_frame, height=ELEMENTS_IN_LIST, width=LIST_WIDTH,
                   selectmode=MULTIPLE)
 listbox.grid(row=1, column=0, columnspan=2)
-listbox.insert(END, local.PUSH_LOAD_VARIABLES)
 
 graph_object = PlotWindow(right_frame)
 graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
 
 results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n')*4)
 results_object.grid(row=0, column=2, columnspan=5)
-message_object = Label(bottom_frame, text=local.WELCOME)
+message_object = Label(bottom_frame, text=(local.WELCOME+' '+local.PUSH_LOAD_VARIABLES))
 message_object.grid(row=1, column=0, columnspan=8)
 
 # -------------------------------------------------------------------
 
-root.bind('<Return>', load_button_bound)
+root.bind('<Return>', enter_variables_button_bound)
 root.bind('<Escape>', exit_button_bound)
 
 root.mainloop()
