@@ -81,14 +81,14 @@ class DataSet:
                '\n'.join([str(key) + ': ' + str(dic[key])
                           for key in dic])
 
-    def get_data_id(self, search_keywords):
+    @staticmethod
+    def get_data_id(search_keywords):
         """
 
         :param search_keywords: list
         :return: list
         """
 
-        start, end = self.start_year, self.stop_year
         search_keywords = search_keywords.split()
         try:
             data = wb.search('|'.join(search_keywords))

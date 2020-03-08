@@ -19,6 +19,7 @@ from tkinter import Tk, Label, Frame, Entry, Button, \
 # import asyncio
 # import pandas as pd
 from OOP import *
+import regression
 import local_en as local
 # from pandas.plotting import register_matplotlib_converters
 # from PIL import Image, ImageTk
@@ -26,8 +27,8 @@ import local_en as local
 
 # register_matplotlib_converters()
 
-DEFAULT_FR_DATE = '31/01/2018'
-DEFAULT_TO_DATE = '31/01/2019'
+DEFAULT_FR_DATE = '1995'
+DEFAULT_TO_DATE = '2020'
 DEFAULT_KEYWORDS = local.DEFAULT_KEYWORDS
 BUTTON_WIDTH = 10
 ELEMENTS_IN_LIST = 29
@@ -53,30 +54,6 @@ bottom_frame.grid(row=2, column=0, columnspan=8, sticky=S)
 chosen_variables = set()
 dependent_variable = ''
 model_to_use = ''
-
-
-def arima_model(ts_data):
-    """
-
-    :param ts_data: pandas.DataFrame
-    :return: results string
-    """
-
-    results = 'ARIMA results'
-
-    return results
-
-
-def ecm_model(ts_data):
-    """
-
-    :param ts_data: pandas.DataFrame
-    :return: results string
-    """
-
-    results = 'ECM results'
-
-    return results
 
 
 def load_button_bound(event=None):
@@ -210,7 +187,7 @@ def enter_variables_button_bound(event=None):
         """
 
         global dependent_variable, chosen_variables,\
-            wb_data, arima_model, ecm_model
+            wb_data
 
         try:
             dependent_variable = inner_listbox.get(inner_listbox.curselection()[0])
@@ -218,10 +195,10 @@ def enter_variables_button_bound(event=None):
             data = wb_data.get_data(chosen_variables)
 
             if model_to_use == 'ARIMA':
-                results_object['text'] = arima_model(data)
+                results_object['text'] = regression.arima_model(data)
 
             elif model_to_use == 'ECM':
-                results_object['text'] = ecm_model(data)
+                results_object['text'] = regression.ecm_model(data)
 
             chosen_variables.clear()
 
@@ -315,8 +292,8 @@ ecm_model_button = Radiobutton(master=top_frame, indicatoron=0,
 arima_model_button = Radiobutton(master=top_frame, indicatoron=0,
                                  text='ARIMA', variable=model_var,
                                  value='ARIMA', command=model_bound)
-ecm_model_button.grid(row=0, column=7, sticky=W)
-arima_model_button.grid(row=1, column=7, sticky=W)
+ecm_model_button.grid(row=1, column=7, sticky=W)
+arima_model_button.grid(row=2, column=7, sticky=W)
 
 # -------------------------------------------------------------------
 
@@ -353,6 +330,8 @@ results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n'
 results_object.grid(row=0, column=0, columnspan=8, sticky=S)
 message_object = Label(bottom_frame, text=(local.WELCOME+' '+local.PUSH_LOAD_VARIABLES))
 message_object.grid(row=1, column=0, columnspan=8)
+
+Label(top_frame, text=local.MODEL).grid(row=0, column=7, sticky=W)
 
 # -------------------------------------------------------------------
 
