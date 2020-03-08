@@ -116,14 +116,13 @@ class DataSet:
                                               start=self.start_year, end=self.stop_year)
 
             DataSet.indicators_ids_data = indicators_ids_data
+            return indicators_ids_data
 
         except AttributeError as error1:
             DataSet.error = local.ERROR + str(error1)
 
         except pdu.RemoteDataError as error2:
             DataSet.error = local.ERROR + str(error2)
-
-        return
 
 
 class PlotWindow(Frame):

@@ -55,6 +55,30 @@ dependent_variable = ''
 model_to_use = ''
 
 
+def arima_model(ts_data):
+    """
+
+    :param ts_data: pandas.DataFrame
+    :return: results string
+    """
+
+    results = 'ARIMA results'
+
+    return results
+
+
+def ecm_model(ts_data):
+    """
+
+    :param ts_data: pandas.DataFrame
+    :return: results string
+    """
+
+    results = 'ECM results'
+
+    return results
+
+
 def load_button_bound(event=None):
     """
     Bound events on Load button
@@ -118,11 +142,7 @@ def results_button_bound(event=None):
     results_button.config(relief=SUNKEN)
 
     try:
-        results_object.destroy()
-        del results_object
-
-        results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n')*4)
-        results_object.grid(row=0, column=0, columnspan=7, sticky=S)
+        results_object['text'] = (str(round(random.random(), 4))*4+'\n')*4
 
     except Exception as error:
         message_object['text'] = error
@@ -172,7 +192,7 @@ def enter_variables_button_bound(event=None):
 
     global enter_variables_button,\
         listbox, chosen_variables,\
-        dependent_variable
+        dependent_variable, results_object
 
     enter_variables_button.config(relief=SUNKEN)
 
@@ -189,12 +209,19 @@ def enter_variables_button_bound(event=None):
         :return: None
         """
 
-        global dependent_variable, chosen_variables, wb_data
+        global dependent_variable, chosen_variables,\
+            wb_data, arima_model, ecm_model
 
         try:
             dependent_variable = inner_listbox.get(inner_listbox.curselection()[0])
             exit_small()
-            wb_data.get_data(chosen_variables)
+            data = wb_data.get_data(chosen_variables)
+
+            if model_to_use == 'ARIMA':
+                results_object['text'] = arima_model(data)
+
+            elif model_to_use == 'ECM':
+                results_object['text'] = ecm_model(data)
 
             chosen_variables.clear()
 
@@ -249,9 +276,6 @@ def exit_button_bound(event=None):
     except KeyboardInterrupt:
         pass
 
-    finally:
-        exit()
-
 
 # Buttons and Radiobuttons ------------------------------------------
 exit_button = Button(top_frame,
@@ -285,13 +309,14 @@ enter_variables_button = Button(top_frame,
 enter_variables_button.grid(row=0, column=6, sticky=N+W, rowspan=3)
 
 model_var = StringVar()
-model_var.set('ECM')
-ecm_model = Radiobutton(master=top_frame,
-                        text='ECM', variable=model_var, value='ECM')
-arima_model = Radiobutton(master=top_frame,
-                          text='ARIMA', variable=model_var, value='ARIMA')
-ecm_model.grid(row=0, column=7, sticky=W)
-arima_model.grid(row=1, column=7, sticky=W)
+ecm_model_button = Radiobutton(master=top_frame, indicatoron=0,
+                               text='ECM', variable=model_var,
+                               value='ECM', command=model_bound)
+arima_model_button = Radiobutton(master=top_frame, indicatoron=0,
+                                 text='ARIMA', variable=model_var,
+                                 value='ARIMA', command=model_bound)
+ecm_model_button.grid(row=0, column=7, sticky=W)
+arima_model_button.grid(row=1, column=7, sticky=W)
 
 # -------------------------------------------------------------------
 
@@ -325,7 +350,7 @@ graph_object = PlotWindow(right_frame)
 graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
 
 results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n')*4)
-results_object.grid(row=0, column=2, columnspan=5)
+results_object.grid(row=0, column=0, columnspan=8, sticky=S)
 message_object = Label(bottom_frame, text=(local.WELCOME+' '+local.PUSH_LOAD_VARIABLES))
 message_object.grid(row=1, column=0, columnspan=8)
 
