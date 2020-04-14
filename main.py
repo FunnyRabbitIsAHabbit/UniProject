@@ -54,6 +54,7 @@ bottom_frame.grid(row=2, column=0, columnspan=8, sticky=S)
 chosen_variables = set()
 dependent_variable = ''
 model_to_use = ''
+regression_results = ''
 
 
 def load_button_bound(event=None):
@@ -102,7 +103,7 @@ def model_bound(event=None):
     :return: None
     """
 
-    global model_to_use
+    global model_to_use, dependent_variable, chosen_variables
 
     model_to_use = model_var.get()
 
@@ -114,12 +115,12 @@ def results_button_bound(event=None):
     :return: None
     """
 
-    global results_object, message_object
+    global results_object, message_object, regression_results
 
     results_button.config(relief=SUNKEN)
 
     try:
-        results_object['text'] = (str(round(random.random(), 4))*4+'\n')*4
+        results_object.insert(END, regression_results)
 
     except Exception as error:
         message_object['text'] = error
@@ -169,7 +170,7 @@ def enter_variables_button_bound(event=None):
 
     global enter_variables_button,\
         listbox, chosen_variables,\
-        dependent_variable, results_object
+        dependent_variable, results_object, regression_results
 
     enter_variables_button.config(relief=SUNKEN)
 
@@ -187,7 +188,7 @@ def enter_variables_button_bound(event=None):
         """
 
         global dependent_variable, chosen_variables,\
-            wb_data
+            wb_data, regression_results
 
         try:
             dependent_variable = inner_listbox.get(inner_listbox.curselection()[0])
@@ -195,12 +196,22 @@ def enter_variables_button_bound(event=None):
             data = wb_data.get_data(chosen_variables)
 
             if model_to_use == 'ARIMA':
-                results_object['text'] = regression.arima_model(data)
+
+                data = data[(wb_data.get_id_by_name([dependent_variable])[0])]
+                data = pd.Series(reversed(data.values)).interpolate(method='linear',
+                                                                    limit_direction='both')
+                data.to_numpy()
+                print(data)
+                regression_results = regression.arima_model(data)
+                message_object['text'] = local.PUSH_RESULTS
+                chosen_variables.clear()
 
             elif model_to_use == 'ECM':
-                results_object['text'] = regression.ecm_model(data)
+                results_object.insert(END, regression.ecm_model(data))
+                chosen_variables.clear()
 
-            chosen_variables.clear()
+            else:
+                message_object['text'] = local.NO_MODEL_CHOSEN
 
         except IndexError:
             pass
@@ -326,8 +337,9 @@ listbox.grid(row=1, column=0, columnspan=2)
 graph_object = PlotWindow(right_frame)
 graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
 
-results_object = Label(bottom_frame, text=(str(round(random.random(), 4))*4+'\n')*4)
+results_object = Listbox(bottom_frame, width=103, height=5)
 results_object.grid(row=0, column=0, columnspan=8, sticky=S)
+results_object.insert(END, local.RESULTS.center(150, '-'))
 message_object = Label(bottom_frame, text=(local.WELCOME+' '+local.PUSH_LOAD_VARIABLES))
 message_object.grid(row=1, column=0, columnspan=8)
 
