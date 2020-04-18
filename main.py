@@ -1,6 +1,6 @@
 """
 
-Uni project
+Uni project. Main module.
 
 Developer: Stanislav Alexandrovich Ermokhin
 

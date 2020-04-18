@@ -1,6 +1,6 @@
 """
 
-Uni project's localization part
+Uni project. Localization (english).
 
 Developer: Stanislav Alexandrovich Ermokhin
 

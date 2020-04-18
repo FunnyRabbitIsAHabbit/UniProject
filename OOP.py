@@ -1,6 +1,6 @@
 """
 
-Uni project's OOP part
+Uni project. OOP part.
 
 Developer: Stanislav Alexandrovich Ermokhin
 
