@@ -6,31 +6,41 @@ Developer: Stanislav Alexandrovich Ermokhin
 
 """
 
-from datetime import datetime
+
 import statsmodels.api as sm
+import pandas as pd
 import statsmodels.formula.api as smf
+import pmdarima as pm
+import statsmodels.api as sm
+
 from statsmodels.tsa.arima_model import ARIMA
 from sklearn.metrics import mean_squared_error
-import pandas as pd
+from datetime import datetime
 
 
 from OOP import *
 
 
-def ecm_model(ts_data_dep, ts_data_indep):
+def linear_model(name_data, ts_data_dep, ts_data_indep):
     """
 
+    :param name_data: str
     :param ts_data_dep: pandas.DataFrame
     :param ts_data_indep: pandas.DataFrame
     :return: results string
     """
 
-    results = 'ECM results'
+    filename = 'LINEAR_model'+name_data+str(datetime.now().timestamp())+'.txt'
 
-    with open('ECM_model'+str(datetime.now().timestamp())+'.data', 'w') as a:
-        a.write(results)
+    ts_data_indep['Intercept'] = [1.0 for _ in len(ts_data_dep.index)]
+    reg = sm.OLS(ts_data_dep, ts_data_indep)
+    model_fit = reg.fit()
+    results = model_fit.summary()
 
-    return results
+    with open(filename, 'w') as a:
+        a.write(str(results))
+
+    return filename
 
 
 def evaluate_arima_model(X, arima_order):
@@ -66,19 +76,34 @@ def evaluate_models(dataset, p_values, d_values, q_values):
     return best_cfg or (1, 1, 1)
 
 
-def arima_model(ts_data):
+def arima_model(name_data, ts_data, p=None, d=None, q=None):
     """
 
+    :param name_data: str
     :param ts_data: array like object
+    :param p: str or None
+    :param d: str or None
+    :param q: str or None
     :return: results string
     """
 
-    p = [0, 1, 2]
-    d = [0, 1]
-    q = [0, 1, 2]
-    results = ARIMA(ts_data, order=evaluate_models(ts_data, p, d, q)).fit().summary()
+    try:
+        p = int(p)
+        d = int(d)
+        q = int(q)
 
-    with open('ARIMA_model'+str(datetime.now().timestamp())+'.data', 'w') as a:
+        model_fit = ARIMA(ts_data, order=(p, d, q)).fit()
+
+    except Exception as error:
+        print('_ERROR_'*10)
+        print(error)
+
+        model_fit = pm.auto_arima(ts_data)
+
+    results = model_fit.summary()
+    filename = 'ARIMA_model_'+name_data+str(datetime.now().timestamp())+'.txt'
+
+    with open(filename, 'w') as a:
         a.write(str(results))
 
-    return results
+    return filename

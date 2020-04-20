@@ -21,6 +21,8 @@ import local_en as local
 class DataSet:
 
     current_error = None
+    current_dep_data = None
+    current_indep_data = None
 
     def __init__(self, countries=None,
                  indicators=None, start_year=None, stop_year=None):
