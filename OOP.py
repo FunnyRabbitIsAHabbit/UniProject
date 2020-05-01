@@ -215,6 +215,18 @@ class MPLPlot(Figure):
 
         self.plot.plot(plot_x, plot_y, label=label)
 
+    def build_scatter_plot(self, plot_x, plot_y, label):
+        """
+        Add scatter plot on a subplot
+
+        :param plot_x: tuple of x_data
+        :param plot_y: tuple of y_data
+        :param label: label
+        :return:
+        """
+
+        self.plot.scatter(plot_x, plot_y, label=label)
+
     def nice_plot(self, x_label=None, y_label=None):
         """
         Make plot look nice

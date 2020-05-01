@@ -6,7 +6,6 @@ Developer: Stanislav Alexandrovich Ermokhin
 
 """
 
-import numpy as np
 # import lxml.html as h
 # import aiohttp
 # import asyncio
@@ -16,7 +15,8 @@ import numpy as np
 
 # from datetime import datetime as dt
 # from operator import itemgetter
-from tkinter import Tk, Label, Frame, Entry, Button, \
+from threading import Thread, ThreadError
+from tkinter import Tk, Label, Entry, Button, \
     N, S, W, E, SUNKEN, RAISED, MULTIPLE, SINGLE, Listbox,\
     END, Radiobutton, StringVar
 
@@ -62,6 +62,8 @@ dependent_variable = ''
 model_to_use = ''
 regression_results = ''
 results_object = 'filename'
+to_plot_data = dict()
+to_plot_data1 = dict()
 
 
 def load_button_bound(event=None):
@@ -88,12 +90,15 @@ def load_button_bound(event=None):
 
         graph_object = PlotWindow(right_frame)
         mpl_subplot = MPLPlot()
-        x = np.linspace(0, 2, 100)
-        mpl_subplot.build_plot(x, x ** 2, 'x**2')
-        mpl_subplot.build_plot(x, x ** 3, 'x**3')
-        mpl_subplot.build_plot(x, x, 'x')
+
+        mpl_subplot.build_scatter_plot(tuple(to_plot_data.keys()),
+                                       tuple(to_plot_data.values()),
+                                       'X USD')
+        mpl_subplot.build_scatter_plot(tuple(to_plot_data1.keys()),
+                                       tuple(to_plot_data1.values()),
+                                       'Predicted X USD')
         mpl_subplot.suptitle(dependent_variable)
-        mpl_subplot.nice_plot('time', dependent_variable)
+        mpl_subplot.nice_plot('Year', dependent_variable)
         graph_object.add_mpl_figure(mpl_subplot)
 
         graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
@@ -157,7 +162,11 @@ def data_load_button_bound(event=None):
     data_load_button.config(relief=SUNKEN)
     message_object['text'] = local.WELCOME
 
-    try:
+    def go():
+
+        global left_frame, keyword_text,\
+        listbox, message_object, wb_data
+
         listbox.delete(0, END)
 
         wb_data = DataSet(start_year=fr_date.get(), stop_year=to_date.get())
@@ -170,8 +179,21 @@ def data_load_button_bound(event=None):
         for data_item in data_wb:
             listbox.insert(END, data_item)
 
-    except Exception as error:
+        message_object['text'] = local.CHOOSE_MODEL
+
+    try:
+
+        message_object['text'] = local.LOADING
+
+        t1 = Thread(target=go)
+        t1.setDaemon(True)
+        t1.start()
+
+    except BaseException as error:
         message_object['text'] = error
+
+    except ThreadError as te:
+        message_object['text'] = te
 
     data_load_button.config(relief=RAISED)
 
@@ -203,7 +225,8 @@ def enter_variables_button_bound(event=None):
         """
 
         global dependent_variable, chosen_variables,\
-            wb_data, regression_results
+            wb_data, regression_results, to_plot_data,\
+            to_plot_data1
 
         try:
             dependent_variable = inner_listbox.get(inner_listbox.curselection()[0])
@@ -216,13 +239,23 @@ def enter_variables_button_bound(event=None):
                 wb_data.current_dep_data = data
 
                 if model_to_use == 'ARIMA':
-                    ar_p = p.get()
-                    int_d = d.get()
-                    ma_q = q.get()
-                    regression_results = regression.arima_model(dependent_variable, data, ar_p, int_d, ma_q)
-                    message_object['text'] = local.PUSH_RESULTS
+                    try:
+                        ar_p = int(p.get())
+                        int_d = int(d.get())
+                        ma_q = int(q.get())
+                        frcst = int(forecast.get())
 
-                    chosen_variables.clear()
+                        res = regression.arima_model(dependent_variable, data,
+                                                                    ar_p, int_d, ma_q, prdct=frcst)
+                        regression_results = res[0]
+                        to_plot_data = res[1]
+                        to_plot_data1 = res[2]
+                        message_object['text'] = local.PUSH_RESULTS + '\n' + local.PUSH_GRAPH
+
+                        chosen_variables.clear()
+
+                    except BaseException as error:
+                        message_object['text'] = error
 
                 elif model_to_use == 'LINEAR':
                     indep_data = pd.DataFrame()
@@ -233,6 +266,8 @@ def enter_variables_button_bound(event=None):
 
                     wb_data.current_indep_data = indep_data
                     regression_results = regression.linear_model(dependent_variable, data, indep_data)
+                    message_object['text'] = local.PUSH_RESULTS + '\n' + local.PUSH_GRAPH
+
                     chosen_variables.clear()
 
                 else:
@@ -385,6 +420,7 @@ q.insert(0, DEFAULT_q)
 
 forecast = Entry(bottom_frame)
 forecast_label = Label(bottom_frame, text=local.PROJECTION_PERIOD)
+forecast.insert(0, '1')
 
 forecast_label.grid(row=1, column=0)
 forecast.grid(row=1, column=1)

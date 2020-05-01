@@ -8,17 +8,12 @@ Developer: Stanislav Alexandrovich Ermokhin
 
 
 import statsmodels.api as sm
+# import pmdarima as pm
 import pandas as pd
-import statsmodels.formula.api as smf
-import pmdarima as pm
-import statsmodels.api as sm
+import json
 
 from statsmodels.tsa.arima_model import ARIMA
-from sklearn.metrics import mean_squared_error
 from datetime import datetime
-
-
-from OOP import *
 
 
 def linear_model(name_data, ts_data_dep, ts_data_indep):
@@ -32,7 +27,7 @@ def linear_model(name_data, ts_data_dep, ts_data_indep):
 
     filename = 'LINEAR_model'+name_data+str(datetime.now().timestamp())+'.txt'
 
-    ts_data_indep['Intercept'] = [1.0 for _ in len(ts_data_dep.index)]
+    ts_data_indep['Intercept'] = [1.0 for _ in range(len(ts_data_dep.index))]
     reg = sm.OLS(ts_data_dep, ts_data_indep)
     model_fit = reg.fit()
     results = model_fit.summary()
@@ -43,40 +38,7 @@ def linear_model(name_data, ts_data_dep, ts_data_indep):
     return filename
 
 
-def evaluate_arima_model(X, arima_order):
-    # prepare training dataset
-    train_size = 21//24
-    train, test = X[0:train_size], X[train_size:]
-    history = [x for x in train]
-    # make predictions
-    predictions = list()
-    for t in range(len(test)):
-        model = ARIMA(history, order=arima_order)
-        model_fit = model.fit(disp=0)
-        yhat = model_fit.forecast()[0]
-        predictions.append(yhat)
-        history.append(test[t])
-    # calculate out of sample error
-    error = mean_squared_error(test, predictions)
-    return error
-
-
-def evaluate_models(dataset, p_values, d_values, q_values):
-    best_score, best_cfg = float('inf'), None
-    for p in p_values:
-        for d in d_values:
-            for q in q_values:
-                order = (p, d, q)
-                try:
-                    mse = evaluate_arima_model(dataset, order)
-                    if mse < best_score:
-                        best_score, best_cfg = mse, order
-                except Exception:
-                    continue
-    return best_cfg or (1, 1, 1)
-
-
-def arima_model(name_data, ts_data, p=None, d=None, q=None):
+def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
     """
 
     :param name_data: str
@@ -84,7 +46,11 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None):
     :param p: str or None
     :param d: str or None
     :param q: str or None
-    :return: results string
+    :param x: matrix like object or None
+    :param prdct: int or None
+    :return: results_filename str,
+    data dict {year: value},
+    predicted data dict {year: value}
     """
 
     try:
@@ -92,18 +58,36 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None):
         d = int(d)
         q = int(q)
 
-        model_fit = ARIMA(ts_data, order=(p, d, q)).fit()
+        model_fit = ARIMA(ts_data, order=(p, d, q), exog=x).fit()
+        model_data = model_fit._results.data.__dict__
+
+        ddic = model_data['orig_endog'].items()
+        df = pd.DataFrame(ddic, columns=['multi_index', 'value'])
+        year = df['multi_index'][0][1]
+        df['year'] = [int(year) + i for i in range(len(df.index))]
+        df = df.drop(columns=['multi_index'], axis=1)
+        dic = df.to_dict('index')
+        year_since = int(df['year'].tail(1))
+        forec = model_fit.forecast(steps=prdct)
+        prediction = forec[0]
+        nd = {dic[key]['year']: float(dic[key]['value'])
+              for key in dic}
+
+        predictions = {year_since + i: float(prediction[i-1])
+                       for i in range(1, len(prediction)+1)}
+        print(nd)
+        results = model_fit.summary()
+        filename = 'ARIMA_model_' + name_data + str(datetime.now().timestamp()) + '.txt'
+
+        with open(filename, 'w') as a:
+            a.write(str(results))
+
+        json_filename = 'ARIMA_model_' + name_data + str(datetime.now().timestamp()) + '.json'
+        with open(json_filename, 'w') as a:
+            json.dump(nd.update(predictions), a)
+
+        return filename, nd, predictions
 
     except Exception as error:
         print('_ERROR_'*10)
         print(error)
-
-        model_fit = pm.auto_arima(ts_data)
-
-    results = model_fit.summary()
-    filename = 'ARIMA_model_'+name_data+str(datetime.now().timestamp())+'.txt'
-
-    with open(filename, 'w') as a:
-        a.write(str(results))
-
-    return filename
