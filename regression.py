@@ -22,12 +22,13 @@ def linear_model(name_data, ts_data_dep, ts_data_indep):
     :param name_data: str
     :param ts_data_dep: pandas.DataFrame
     :param ts_data_indep: pandas.DataFrame
-    :return: results string
+    :return: results_filename str,
+    data dict {year: value}
     """
 
     filename = 'LINEAR_model'+name_data+str(datetime.now().timestamp())+'.txt'
 
-    ts_data_indep['Intercept'] = [1.0 for _ in range(len(ts_data_dep.index))]
+    ts_data_indep = sm.add_constant(ts_data_indep)
     reg = sm.OLS(ts_data_dep, ts_data_indep)
     model_fit = reg.fit()
     results = model_fit.summary()
@@ -35,10 +36,18 @@ def linear_model(name_data, ts_data_dep, ts_data_indep):
     with open(filename, 'w') as a:
         a.write(str(results))
 
-    return filename
+    df = pd.DataFrame(ts_data_dep.items(), columns=['multi_index', 'value'])
+    year = df['multi_index'][0][1]
+    df['year'] = [int(year) + i for i in range(len(df.index))]
+    df = df.drop(columns=['multi_index'], axis=1)
+    dic = df.to_dict('index')
+    nd = {dic[key]['year']: float(dic[key]['value'])
+          for key in dic}
+
+    return filename, nd
 
 
-def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
+def arima_model(name_data, ts_data, p=None, d=None, q=None, prdct=None):
     """
 
     :param name_data: str
@@ -46,7 +55,6 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
     :param p: str or None
     :param d: str or None
     :param q: str or None
-    :param x: matrix like object or None
     :param prdct: int or None
     :return: results_filename str,
     data dict {year: value},
@@ -58,7 +66,7 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
         d = int(d)
         q = int(q)
 
-        model_fit = ARIMA(ts_data, order=(p, d, q), exog=x).fit()
+        model_fit = ARIMA(ts_data, order=(p, d, q)).fit()
         model_data = model_fit._results.data.__dict__
 
         ddic = model_data['orig_endog'].items()
@@ -75,7 +83,6 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
 
         predictions = {year_since + i: float(prediction[i-1])
                        for i in range(1, len(prediction)+1)}
-        print(nd)
         results = model_fit.summary()
         filename = 'ARIMA_model_' + name_data + str(datetime.now().timestamp()) + '.txt'
 
@@ -89,5 +96,4 @@ def arima_model(name_data, ts_data, p=None, d=None, q=None, x=None, prdct=None):
         return filename, nd, predictions
 
     except Exception as error:
-        print('_ERROR_'*10)
-        print(error)
+        return error, dict(), dict()

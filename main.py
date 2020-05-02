@@ -74,34 +74,44 @@ def load_button_bound(event=None):
     :return: None
     """
 
-    global graph_object, mpl_subplot, message_object
+    global graph_object, mpl_subplot, message_object,\
+        to_plot_data, to_plot_data1
 
     load_button.config(relief=SUNKEN)
 
     try:
-        try:
-            del mpl_subplot
 
-        except NameError:
-            pass
+        if to_plot_data:
+            try:
+                del mpl_subplot
 
-        graph_object.destroy()
-        del graph_object
+            except NameError:
+                pass
 
-        graph_object = PlotWindow(right_frame)
-        mpl_subplot = MPLPlot()
+            graph_object.destroy()
+            del graph_object
 
-        mpl_subplot.build_scatter_plot(tuple(to_plot_data.keys()),
-                                       tuple(to_plot_data.values()),
-                                       'X USD')
-        mpl_subplot.build_scatter_plot(tuple(to_plot_data1.keys()),
-                                       tuple(to_plot_data1.values()),
-                                       'Predicted X USD')
-        mpl_subplot.suptitle(dependent_variable)
-        mpl_subplot.nice_plot('Year', dependent_variable)
-        graph_object.add_mpl_figure(mpl_subplot)
+            graph_object = PlotWindow(right_frame)
+            mpl_subplot = MPLPlot()
+            mpl_subplot.build_scatter_plot(tuple(to_plot_data.keys()),
+                                           tuple(to_plot_data.values()),
+                                           'Y')
+            to_plot_data.clear()
 
-        graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
+            if to_plot_data1:
+                mpl_subplot.build_scatter_plot(tuple(to_plot_data1.keys()),
+                                               tuple(to_plot_data1.values()),
+                                               'Predicted Y')
+                to_plot_data1.clear()
+
+            mpl_subplot.suptitle(dependent_variable)
+            mpl_subplot.nice_plot('Year', dependent_variable)
+            graph_object.add_mpl_figure(mpl_subplot)
+
+            graph_object.grid(row=0, column=0, columnspan=5, sticky=N)
+
+        else:
+            message_object['text'] = local.PLOT_ALREADY
 
     except Exception as error:
         message_object['text'] = error
@@ -142,6 +152,9 @@ def results_button_bound(event=None):
 
         new_window.mainloop()
 
+    except FileNotFoundError:
+        message_object['text'] = regression_results
+
     except Exception as error:
         message_object['text'] = error
 
@@ -168,18 +181,22 @@ def data_load_button_bound(event=None):
         listbox, message_object, wb_data
 
         listbox.delete(0, END)
+        try:
 
-        wb_data = DataSet(start_year=fr_date.get(), stop_year=to_date.get())
-        data_wb = wb_data.get_data_id(keyword_text.get())
+            wb_data = DataSet(start_year=fr_date.get(), stop_year=str(int(to_date.get())+1))
+            data_wb = wb_data.get_data_id(keyword_text.get())
 
-        class_error = wb_data.current_error
-        if class_error:
-            message_object['text'] = class_error
+            class_error = wb_data.current_error
+            if class_error:
+                message_object['text'] = class_error
 
-        for data_item in data_wb:
-            listbox.insert(END, data_item)
+            for data_item in data_wb:
+                listbox.insert(END, data_item)
 
-        message_object['text'] = local.CHOOSE_MODEL
+            message_object['text'] = local.CHOOSE_MODEL
+
+        except ValueError:
+            message_object['text'] = local.ERROR_WRONG_YEAR
 
     try:
 
@@ -234,9 +251,9 @@ def enter_variables_button_bound(event=None):
 
             try:
                 data = wb_data.get_data(chosen_variables)
-                data = data[(wb_data.get_id_by_name([dependent_variable])[0])].fillna(method='bfill')
-                data = data.iloc[::-1]
-                wb_data.current_dep_data = data
+                dep_data = data[(wb_data.get_id_by_name([dependent_variable])[0])].fillna(method='bfill')
+                dep_data = dep_data.iloc[::-1]
+                wb_data.current_dep_data = dep_data
 
                 if model_to_use == 'ARIMA':
                     try:
@@ -245,8 +262,9 @@ def enter_variables_button_bound(event=None):
                         ma_q = int(q.get())
                         frcst = int(forecast.get())
 
-                        res = regression.arima_model(dependent_variable, data,
-                                                                    ar_p, int_d, ma_q, prdct=frcst)
+                        res = regression.arima_model(dependent_variable, dep_data,
+                                                     ar_p, int_d, ma_q,
+                                                     prdct=frcst)
                         regression_results = res[0]
                         to_plot_data = res[1]
                         to_plot_data1 = res[2]
@@ -259,13 +277,16 @@ def enter_variables_button_bound(event=None):
 
                 elif model_to_use == 'LINEAR':
                     indep_data = pd.DataFrame()
-                    for var in chosen_variables:
+                    independent_chosen_variables = chosen_variables.difference({dependent_variable})
+                    for var in independent_chosen_variables:
                         independent_data = data[(wb_data.get_id_by_name([var])[0])].fillna(method='bfill')
                         independent_data = independent_data.iloc[::-1]
                         indep_data[var] = independent_data
 
                     wb_data.current_indep_data = indep_data
-                    regression_results = regression.linear_model(dependent_variable, data, indep_data)
+                    res = regression.linear_model(dependent_variable, dep_data, indep_data)
+                    regression_results = res[0]
+                    to_plot_data = res[1]
                     message_object['text'] = local.PUSH_RESULTS + '\n' + local.PUSH_GRAPH
 
                     chosen_variables.clear()
@@ -424,6 +445,10 @@ forecast.insert(0, '1')
 
 forecast_label.grid(row=1, column=0)
 forecast.grid(row=1, column=1)
+
+warning_label = Label(bottom_frame, text=local.WARNING)
+
+warning_label.grid(row=1, column=2, columnspan=3)
 
 keyword_text = Entry(top_frame, width=LIST_WIDTH+10)
 keyword_text.insert(0, DEFAULT_KEYWORDS)
