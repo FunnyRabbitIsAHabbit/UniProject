@@ -253,6 +253,9 @@ class VerticalScrolledFrame:
         (outer Frame, Canvas, inner Frame) so
         if you subclass this there is no built in way for the children to access it.
         You need to provide the controller separately.
+        
+        from: https://gist.github.com/novel-yet-trivial/3eddfce704db3082e38c84664fc1fdf8
+        
         """
 
     def __init__(self, master, **kwargs):
