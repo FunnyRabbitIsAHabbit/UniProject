@@ -57,7 +57,7 @@ get_plot <- function(df, name) {
 
 # Data manipulation --------------------
 
-data_transp_for_analysis <- read_excel("~/Desktop/NSU/Thesis/data_transp_for_analysis.xlsx", 
+data_transp_for_analysis <- read_excel("/Users/stanislavermohin/Desktop/NSU/Thesis/xlsx_output/data_transp_for_analysis.xlsx", 
                                        col_types = c("numeric", "numeric", "numeric", 
                                                      "numeric", "numeric", "numeric", 
                                                      "numeric"))

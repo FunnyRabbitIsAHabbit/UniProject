@@ -104,7 +104,7 @@ def load_button_bound(event=None):
                                                'Predicted Y')
                 to_plot_data1.clear()
 
-            mpl_subplot.suptitle(dependent_variable)
+            mpl_subplot.suptitle(local.GRAPH_TITLE)
             mpl_subplot.nice_plot('Year', dependent_variable)
             graph_object.add_mpl_figure(mpl_subplot)
 
